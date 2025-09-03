@@ -1,6 +1,4 @@
-#!/bin/sh
-'''exec' "/home/diego/development/Sistema Hidalgo/backend/venv/bin/python3" "$0" "$@"
-' '''
+#!/home/brarro4/Escritorio/sistema/Backend-Hidalgo/venv/bin/python3
 import sys
 from django.core.management import execute_from_command_line
 if __name__ == '__main__':

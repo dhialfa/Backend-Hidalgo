@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV '/home/diego/development/Sistema Hidalgo/backend/venv'
+set -gx VIRTUAL_ENV /home/brarro4/Escritorio/sistema/Backend-Hidalgo/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
