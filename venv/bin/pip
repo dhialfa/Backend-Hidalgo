@@ -1,4 +1,6 @@
-#!/home/brarro4/Escritorio/sistema/Backend-Hidalgo/venv/bin/python3
+#!/bin/sh
+'''exec' "/home/diego/development/Sistema Hidalgo/backend/venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
