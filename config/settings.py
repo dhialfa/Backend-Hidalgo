@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -82,11 +84,11 @@ DATABASES = {
         "HOST": os.getenv("MYSQL_HOST", "127.0.0.1"),
         "PORT": int(os.getenv("MYSQL_PORT", "3306")),
         "OPTIONS": {
-            # Charset recomendado para emojis y caracteres latinos
+            # Charset 
             "charset": "utf8mb4",
             "use_unicode": True,
             # Asegura JSONField y comportamiento estricto
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', time_zone='+00:00'",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', time_zone='-06:00'",
         },
     }
 }
@@ -132,3 +134,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = "accounts.Usuario"
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAdminUser"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+}
