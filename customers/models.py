@@ -1,54 +1,53 @@
-# customers/models.py
 from django.db import models
 from django.db.models import Q
 
 
-class Cliente(models.Model):
-    nombre_legal = models.CharField(max_length=200, db_index=True)
-    identificacion = models.CharField(max_length=30, unique=True)
-    correo = models.EmailField()
-    telefono = models.CharField(max_length=30, blank=True, null=True)
-    direccion = models.CharField(max_length=250, blank=True, null=True)
-    ubicacion = models.CharField(max_length=200, blank=True, null=True)
-    activo = models.BooleanField(default=True)
+class Customer(models.Model):
+    legal_name = models.CharField(max_length=200, db_index=True)
+    identification = models.CharField(max_length=30, unique=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    address = models.CharField(max_length=250, blank=True, null=True)
+    location = models.CharField(max_length=200, blank=True, null=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         indexes = [
-            models.Index(fields=["nombre_legal"]),
+            models.Index(fields=["legal_name"]),
         ]
-        verbose_name = "Cliente"
-        verbose_name_plural = "Clientes"
+        verbose_name = "Customer"
+        verbose_name_plural = "Customers"
 
     def __str__(self):
-        return f"{self.nombre_legal} ({self.identificacion})"
+        return f"{self.legal_name} ({self.identification})"
 
 
-class ContactoCliente(models.Model):
-    cliente = models.ForeignKey(
-        Cliente,
+class CustomerContact(models.Model):
+    customer = models.ForeignKey(
+        Customer,
         on_delete=models.CASCADE,
-        related_name="contactos",
+        related_name="contacts",
     )
-    nombre = models.CharField(max_length=120)
-    correo = models.EmailField()
-    telefono = models.CharField(max_length=30, blank=True, null=True)
-    es_principal = models.BooleanField(default=False)
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    is_primary = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
-            # Solo un contacto principal por cliente
+            # Ensure only one primary contact per customer
             models.UniqueConstraint(
-                fields=["cliente"],
-                condition=Q(es_principal=True),
-                name="uniq_principal_por_cliente",
+                fields=["customer"],
+                condition=Q(is_primary=True),
+                name="uniq_primary_contact_per_customer",
             )
         ]
         indexes = [
-            models.Index(fields=["cliente", "es_principal"]),
+            models.Index(fields=["customer", "is_primary"]),
         ]
-        verbose_name = "Contacto de cliente"
-        verbose_name_plural = "Contactos de cliente"
+        verbose_name = "Customer Contact"
+        verbose_name_plural = "Customer Contacts"
 
     def __str__(self):
-        estado = "principal" if self.es_principal else "secundario"
-        return f"{self.nombre} ({estado})"
+        status = "primary" if self.is_primary else "secondary"
+        return f"{self.name} ({status})"

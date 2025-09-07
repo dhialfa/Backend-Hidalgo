@@ -1,47 +1,45 @@
-
-# customers/views.py
+from django.db import transaction
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db import transaction
 
-from .models import Cliente, ContactoCliente
-from .serializers import ClienteSerializer, ContactoClienteSerializer
+from .models import Customer, CustomerContact
+from .serializers import CustomerSerializer, CustomerContactSerializer
 
 
-class ClienteViewSet(viewsets.ModelViewSet):
-    queryset = Cliente.objects.all().order_by("id")
-    serializer_class = ClienteSerializer
-    permission_classes = [permissions.AllowAny]  # ajusta a tu esquema de auth
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all().order_by("id")
+    serializer_class = CustomerSerializer
+    permission_classes = [permissions.AllowAny]  # adjust to your auth
 
-    # Filtros / búsqueda / ordenación
+    # Filters / search / ordering
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["activo", "identificacion"]
-    search_fields = ["nombre_legal", "identificacion", "correo"]
-    ordering_fields = ["id", "nombre_legal", "identificacion", "activo"]
+    filterset_fields = ["active", "identification"]
+    search_fields = ["legal_name", "identification", "email"]
+    ordering_fields = ["id", "legal_name", "identification", "active"]
 
 
-class ContactoClienteViewSet(viewsets.ModelViewSet):
-    queryset = ContactoCliente.objects.select_related("cliente").all().order_by("id")
-    serializer_class = ContactoClienteSerializer
+class CustomerContactViewSet(viewsets.ModelViewSet):
+    queryset = CustomerContact.objects.select_related("customer").all().order_by("id")
+    serializer_class = CustomerContactSerializer
     permission_classes = [permissions.AllowAny]
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["cliente", "es_principal", "correo"]
-    search_fields = ["nombre", "correo", "telefono", "cliente__nombre_legal"]
-    ordering_fields = ["id", "cliente", "es_principal"]
+    filterset_fields = ["customer", "is_primary", "email"]
+    search_fields = ["name", "email", "phone", "customer__legal_name"]
+    ordering_fields = ["id", "customer", "is_primary"]
 
-    @action(detail=True, methods=["post"], url_path="hacer-principal")
-    def hacer_principal(self, request, pk=None):
+    @action(detail=True, methods=["post"], url_path="set-primary")
+    def set_primary(self, request, pk=None):
         """
-        Marca este contacto como principal y desmarca los demás del mismo cliente.
+        Mark this contact as primary and unset other contacts of the same customer.
         """
-        contacto = self.get_object()
+        contact = self.get_object()
         with transaction.atomic():
-            contacto.es_principal = True
-            contacto.save(update_fields=["es_principal"])
-            ContactoCliente.objects.filter(
-                cliente=contacto.cliente
-            ).exclude(pk=contacto.pk).update(es_principal=False)
-        return Response({"status": "ok", "contacto_principal_id": contacto.id})
+            contact.is_primary = True
+            contact.save(update_fields=["is_primary"])
+            CustomerContact.objects.filter(
+                customer=contact.customer
+            ).exclude(pk=contact.pk).update(is_primary=False)
+        return Response({"status": "ok", "primary_contact_id": contact.id})
