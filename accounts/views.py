@@ -1,21 +1,20 @@
 from django.contrib.auth import get_user_model
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, permissions,filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 ##from rest_framework.permissions import IsAdminUser
 from rest_framework.permissions import AllowAny
 
-from .serializers import UsuarioSerializer
+from rest_framework import viewsets, permissions
+from .serializers import UserSerializer
 
 Usuario = get_user_model()
 
-class UsuarioViewSet(viewsets.ModelViewSet):
-    queryset = Usuario.objects.all().order_by("-date_joined")
-    serializer_class = UsuarioSerializer
-    permission_classes = [AllowAny]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["username", "email", "rol"]
-    ordering_fields = ["date_joined", "username", "email"]
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = get_user_model().objects.all().order_by("id")
+    serializer_class = UserSerializer
+    # Solo durante desarrollo; en producción usa permisos más estrictos
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         qs = super().get_queryset()
