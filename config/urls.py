@@ -21,6 +21,8 @@ urlpatterns = [
     path("backend/customers/", include("customers.urls")),
     path("backend/staff/", include("staff.urls")),
     path("backend/plans/", include("plans.urls")),
+    path("backend/subscriptions/", include("subscriptions.urls")),
+
 
     # Swagger / ReDoc
     re_path(r"^backend/swagger(?P<format>\.json|\.yaml)$",

@@ -41,11 +41,13 @@ INSTALLED_APPS = [
     'accounts',
     'customers',
     "staff",
+    "plans",
+    "subscriptions",
     'rest_framework',
     'drf_yasg', 
      "django_filters", 
      "drf_spectacular",
-     "plans",
+     
 ]
 
 MIDDLEWARE = [
