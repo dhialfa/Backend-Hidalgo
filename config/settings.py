@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'drf_yasg', 
      "django_filters", 
      "drf_spectacular",
+     "plans",
 ]
 
 MIDDLEWARE = [
