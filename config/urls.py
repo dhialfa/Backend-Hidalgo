@@ -17,11 +17,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # APIs (no importes ViewSets aquí)
-    path("backend/accounts/", include("accounts.urls")),
-    path("backend/customers/", include("customers.urls")),
-    path("backend/staff/", include("staff.urls")),
-    path("backend/plans/", include("plans.urls")),
-    path("backend/subscriptions/", include("subscriptions.urls")),
+
 
 
     # Swagger / ReDoc

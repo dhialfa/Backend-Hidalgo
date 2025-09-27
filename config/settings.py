@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,12 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts',
-    'customers',
-    "staff",
-    "plans",
-    "subscriptions",
     'rest_framework',
+    'core',
     'drf_yasg', 
      "django_filters", 
      "drf_spectacular",
@@ -86,18 +85,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("MYSQL_DATABASE", "hidalgo_DB"),
-        "USER": os.getenv("MYSQL_USER", "root"),
-        "PASSWORD": os.getenv("MYSQL_PASSWORD", "admin123"),
+        "NAME": os.getenv("MYSQL_DATABASE", "hidalgo_db"),
+        "USER": os.getenv("MYSQL_USER", "hidalgo"),
+        "PASSWORD": os.getenv("MYSQL_PASSWORD", "H1dalgo!2025"),
         "HOST": os.getenv("MYSQL_HOST", "127.0.0.1"),
         "PORT": int(os.getenv("MYSQL_PORT", "3306")),
-        "OPTIONS": {
-            # Charset 
-            "charset": "utf8mb4",
-            "use_unicode": True,
-            # Asegura JSONField y comportamiento estricto
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES', time_zone='-06:00'",
-        },
+        "OPTIONS": {"charset": "utf8mb4", "use_unicode": True},
     }
 }
 
@@ -143,16 +136,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = "accounts.User"
+AUTH_USER_MODEL = 'auth.User'
 
 
 
+# Django REST Framework
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAdminUser"],
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-}
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+}   
