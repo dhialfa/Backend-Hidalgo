@@ -16,7 +16,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # API de usuarios
-    path("api/", include("users.urls")),
+    path("api/users", include("users.urls")),
+    path("api/customers", include("customers.urls")),
 
     # JWT
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
