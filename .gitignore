@@ -1,0 +1,19 @@
+# Virtualenv
+venv/
+.venv/
+
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Entornos/OS
+.env
+.env.*
+.DS_Store
+
+# Django migrations: ignora TODO menos el __init__.py
+**/migrations/**
+!**/migrations/
+!**/migrations/__init__.py
