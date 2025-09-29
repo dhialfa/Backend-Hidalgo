@@ -18,6 +18,8 @@ urlpatterns = [
     # API de Tablas/Apps
     path("api/", include("users.urls")),
     path("api/", include("customers.urls")),
+    path("api/", include("plans.urls")),
+    path("api/", include("visits.urls")),
 
     # JWT
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
