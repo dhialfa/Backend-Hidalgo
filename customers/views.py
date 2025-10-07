@@ -1,5 +1,6 @@
 import os
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, decorators, response, status, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
@@ -13,7 +14,7 @@ def _actor_or_none(request):
     u = getattr(request, "user", None)
     return u if (u and getattr(u, "is_authenticated", False)) else None
 
-# -------- Customers (igual que ya tenías) --------
+# -------- Customers --------
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.active_objects.all().order_by("name", "id")
     serializer_class = CustomerSerializer
@@ -35,7 +36,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.delete()
 
-    @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated])
+    @decorators.action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated],
+    )
     def restore(self, request, pk=None):
         obj = self.get_object()
         obj.active = True
@@ -66,7 +71,6 @@ class CustomerContactViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         actor = _actor_or_none(self.request)
-
         # Fuente del customer: body o ?customer=<id>
         body_customer = self.request.data.get("customer")
         query_customer = self.request.query_params.get("customer")
@@ -105,14 +109,22 @@ class CustomerContactViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.delete()
 
-    @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated])
+    @decorators.action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated],
+    )
     def restore(self, request, pk=None):
         obj = self.get_object()
         obj.active = True
         obj.save(update_fields=["active"])
         return response.Response({"detail": "Contact restored"}, status=status.HTTP_200_OK)
 
-    @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated])
+    @decorators.action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated],
+    )
     @transaction.atomic
     def set_main(self, request, pk=None):
         obj = self.get_object()
@@ -122,3 +134,52 @@ class CustomerContactViewSet(viewsets.ModelViewSet):
             obj.save(update_fields=["is_main"])
         ser = CustomerContactSerializer(obj, context={"request": request})
         return response.Response(ser.data, status=status.HTTP_200_OK)
+
+    # ---------- NUEVO: endpoint "por aparte" ----------
+    @decorators.action(
+        detail=False,
+        methods=["get", "post"],
+        url_path=r"by-customer/(?P<customer_id>\d+)",
+        permission_classes=[permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated],
+    )
+    def by_customer(self, request, customer_id=None):
+        """
+        GET  /api/customer-contact/by-customer/<customer_id>/?only_main=true
+        POST /api/customer-contact/by-customer/<customer_id>/
+        """
+        # Usamos Customer.objects para no excluir inactivos (si tienes soft-delete)
+        customer = get_object_or_404(Customer.objects, pk=customer_id)
+
+        if request.method.lower() == "get":
+            only_main = request.query_params.get("only_main")
+            qs = CustomerContact.active_objects.filter(customer=customer).order_by("-is_main", "name", "id")
+            if only_main in ("1", "true", "True"):
+                qs = qs.filter(is_main=True)
+
+            # Si tienes paginación DRF configurada:
+            page = self.paginate_queryset(qs)
+            if page is not None:
+                ser = CustomerContactSerializer(page, many=True, context={"request": request})
+                return self.get_paginated_response(ser.data)
+
+            ser = CustomerContactSerializer(qs, many=True, context={"request": request})
+            return response.Response(ser.data, status=status.HTTP_200_OK)
+
+        # POST: crear contacto para ESTE customer (no envíes "customer" en el body)
+        ser = CustomerContactSerializer(data=request.data, context={"request": request})
+        ser.is_valid(raise_exception=True)
+
+        actor = _actor_or_none(request)
+        is_main = bool(ser.validated_data.get("is_main", False))
+
+        with transaction.atomic():
+            if is_main:
+                CustomerContact.objects.filter(customer=customer, is_main=True).update(is_main=False)
+
+            save_kwargs = {"customer": customer}
+            if actor:
+                save_kwargs.update(created_by=actor, updated_by=actor)
+            obj = ser.save(**save_kwargs)
+
+        out = CustomerContactSerializer(obj, context={"request": request})
+        return response.Response(out.data, status=status.HTTP_201_CREATED)
