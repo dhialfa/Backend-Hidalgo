@@ -1,7 +1,8 @@
 from django.db import models
 from customers.models import Customer
+from core.models import BaseModel, TimeStampedModel
 
-class Plan(models.Model):
+class Plan(BaseModel, TimeStampedModel):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -13,7 +14,7 @@ class Plan(models.Model):
     def __str__(self) -> str:
         return self.name
 
-class PlanTask(models.Model):
+class PlanTask(BaseModel, TimeStampedModel):
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE, related_name="tasks")
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
@@ -26,7 +27,7 @@ class PlanTask(models.Model):
     def __str__(self) -> str:
         return f"{self.plan.name} · {self.order}. {self.name}"
 
-class PlanSubscription(models.Model):
+class PlanSubscription(BaseModel, TimeStampedModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="subscriptions")
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT, related_name="subscriptions")
     start_date = models.DateField()
