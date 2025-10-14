@@ -7,7 +7,7 @@ from .serializers import (
 )
 
 class BaseAuthViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
 class VisitViewSet(BaseAuthViewSet):

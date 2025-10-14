@@ -9,10 +9,10 @@ class PlanAdmin(admin.ModelAdmin):
 
 @admin.register(PlanTask)
 class PlanTaskAdmin(admin.ModelAdmin):
-    list_display = ("plan", "order", "name")
+    list_display = ("plan", "name")
     list_filter = ("plan",)
     search_fields = ("name",)
-    ordering = ("plan", "order")
+    ordering = ("name", "id") 
 
 @admin.register(PlanSubscription)
 class PlanSubscriptionAdmin(admin.ModelAdmin):

@@ -4,14 +4,12 @@ from .models import Plan, PlanTask, PlanSubscription
 class PlanTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanTask
-        fields = ["id", "plan", "name", "description", "order"]
+        fields = ["id", "plan", "name", "description"]
 
 class PlanSerializer(serializers.ModelSerializer):
-    tasks = PlanTaskSerializer(many=True, read_only=True)
-
     class Meta:
         model = Plan
-        fields = ["id", "name", "description", "price", "active", "tasks"]
+        fields = ["id", "name", "description", "price", "active"]
 
 class PlanSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
