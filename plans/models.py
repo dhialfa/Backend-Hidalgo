@@ -18,14 +18,14 @@ class PlanTask(BaseModel, TimeStampedModel):
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE, related_name="tasks")
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
-    order = models.PositiveIntegerField(default=1)
 
     class Meta:
-        ordering = ["plan_id", "order"]
-        unique_together = [("plan", "order")]
+        ordering = ["plan_id", "name"]
+        constraints = []
+
 
     def __str__(self) -> str:
-        return f"{self.plan.name} · {self.order}. {self.name}"
+        return f"{self.plan.name} . {self.name}"
 
 class PlanSubscription(BaseModel, TimeStampedModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="subscriptions")

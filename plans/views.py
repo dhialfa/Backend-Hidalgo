@@ -4,7 +4,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, decorators, response, status, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
-
 from .models import Plan, PlanTask, PlanSubscription, Customer
 from .serializers import PlanSerializer, PlanTaskSerializer, PlanSubscriptionSerializer
 
@@ -52,14 +51,14 @@ class PlanViewSet(viewsets.ModelViewSet):
 
 # ==================== PlanTasks ====================
 class PlanTaskViewSet(viewsets.ModelViewSet):
-    queryset = PlanTask.active_objects.select_related("plan").all().order_by("order", "name", "id")
+    queryset = PlanTask.active_objects.select_related("plan").all().order_by("name", "id")
     serializer_class = PlanTaskSerializer
     permission_classes = [permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["active", "plan"]
     search_fields = ["name", "description", "plan__name"]
-    ordering_fields = ["order", "name", "id", "created_at", "updated_at"]
-    ordering = ["order", "name"]
+    ordering_fields = ["name", "id", "created_at", "updated_at"]
+    ordering = ["name"]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -137,7 +136,7 @@ class PlanTaskViewSet(viewsets.ModelViewSet):
         plan = get_object_or_404(Plan.objects, pk=plan_id)
 
         if request.method.lower() == "get":
-            qs = PlanTask.active_objects.filter(plan=plan).order_by("order", "name", "id")
+            qs = PlanTask.active_objects.filter(plan=plan).order_by("name", "id")
 
             page = self.paginate_queryset(qs)
             if page is not None:
