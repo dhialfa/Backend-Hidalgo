@@ -17,3 +17,6 @@ __pycache__/
 **/migrations/**
 !**/migrations/
 !**/migrations/__init__.py
+
+# Ignorar carpeta de evidencias
+evidencePhotos/
