@@ -1,31 +1,10 @@
 # visits/models.py
 from django.conf import settings
 from django.db import models
-
-
-# --------- Base abstracta con auditoría ---------
-class TimeStampedBy(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name="%(class)s_created",
-    )
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name="%(class)s_updated",
-    )
-
-    class Meta:
-        abstract = True
-
+from core.models import BaseModel, TimeStampedModel
 
 # --------- Visit ---------
-class Visit(TimeStampedBy):
+class Visit(BaseModel, TimeStampedModel):
     class Status(models.TextChoices):
         SCHEDULED = "scheduled", "Scheduled"
         IN_PROGRESS = "in_progress", "In progress"
@@ -59,7 +38,7 @@ class Visit(TimeStampedBy):
 
 
 # --------- Assessment (1:1 con Visit) ---------
-class Assessment(TimeStampedBy):
+class Assessment(BaseModel, TimeStampedModel):
     visit = models.OneToOneField(
         Visit, on_delete=models.CASCADE, related_name="assessment"
     )
@@ -79,7 +58,7 @@ def evidence_upload_to(instance, filename: str) -> str:
     return f"evidences/{instance.visit_id}/{filename}"
 
 
-class Evidence(TimeStampedBy):
+class Evidence(BaseModel, TimeStampedModel):
     visit = models.ForeignKey(
         Visit, on_delete=models.CASCADE, related_name="evidences"
     )
@@ -96,7 +75,7 @@ class Evidence(TimeStampedBy):
 
 
 # --------- TaskCompleted ---------
-class TaskCompleted(TimeStampedBy):
+class TaskCompleted(BaseModel, TimeStampedModel):
     visit = models.ForeignKey(
         Visit, on_delete=models.CASCADE, related_name="tasks_completed"
     )
@@ -116,7 +95,7 @@ class TaskCompleted(TimeStampedBy):
 
 
 # --------- MaterialUsed ---------
-class MaterialUsed(TimeStampedBy):
+class MaterialUsed(BaseModel, TimeStampedModel):
     visit = models.ForeignKey(
         Visit, on_delete=models.CASCADE, related_name="materials_used"
     )

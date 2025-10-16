@@ -191,12 +191,11 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
         return qs
 
     def _assert_plan_and_tasks_active(self, plan: Plan):
-        # 🚫 No permitir suscripción si plan inactivo
         if not plan.active:
             raise ValidationError({"plan": "No se pueden crear o modificar suscripciones con un plan inactivo."})
-        # 🚫 No permitir si el plan tiene tareas inactivas
         if PlanTask.objects.filter(plan=plan, active=False).exists():
-            raise ValidationError({"plan": "No se pueden crear o modificar suscripciones: el plan tiene tareas inactivas."})
+           raise ValidationError({"plan": "No se pueden crear o modificar suscripciones: el plan tiene tareas inactivas."})
+
 
     def perform_create(self, serializer):
         actor = _actor_or_none(self.request)
