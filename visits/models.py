@@ -15,6 +15,7 @@ class Visit(BaseModel, TimeStampedModel):
         "plans.PlanSubscription",
         on_delete=models.CASCADE,
         related_name="visits",
+        blank=True
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

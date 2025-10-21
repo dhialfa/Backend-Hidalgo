@@ -2,9 +2,9 @@
 import os
 from rest_framework import viewsets, permissions, decorators, response, status
 from django.db.models import Q
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User
-from .serializers import UserSerializer, UserCreateSerializer
+from .serializers import UserSerializer, UserCreateSerializer, EmailTokenObtainPairSerializer
 
 class IsAdmin(permissions.IsAdminUser):
     """Permite solo a staff/superuser."""
@@ -95,3 +95,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return response.Response({"detail": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         ser = UserSerializer(user or User(), context={"request": request})
         return response.Response(ser.data)
+
+class EmailTokenObtainPairView(TokenObtainPairView):
+    serializer_class = EmailTokenObtainPairSerializer

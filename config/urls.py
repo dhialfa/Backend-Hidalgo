@@ -4,6 +4,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from users.views import EmailTokenObtainPairView
 
 schema_view = get_schema_view(
     openapi.Info(title="Backend Hidalgo API", default_version="v1"),
@@ -21,8 +22,8 @@ urlpatterns = [
     path("api/", include("plans.urls")),
     path("api/", include("visits.urls")),
 
-    # JWT
-    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    # JWT    path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
     # Swagger/ReDoc
