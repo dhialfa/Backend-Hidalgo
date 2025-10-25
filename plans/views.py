@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, decorators, response, status, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
-from .models import Plan, PlanTask, PlanSubscription, Customer
+from .models import Plan, PlanTask, PlanSubscription
+from customers.models import Customer
 from .serializers import PlanSerializer, PlanTaskSerializer, PlanSubscriptionSerializer
 
 # ---------- Auth toggle ----------
