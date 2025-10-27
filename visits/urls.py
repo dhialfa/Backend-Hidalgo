@@ -15,3 +15,4 @@ router.register(r"task-completed", TaskCompletedViewSet, basename="task-complete
 router.register(r"material-used", MaterialUsedViewSet, basename="material-used")
 
 urlpatterns = router.urls
+

@@ -65,7 +65,6 @@ class Evidence(BaseModel, TimeStampedModel):
     )
     file = models.FileField(upload_to=evidence_upload_to, null=True, blank=True)
     description = models.CharField(max_length=200, blank=True, default="")
-    # En el diagrama existe "subido_en". Lo mantenemos porque tus vistas lo usan.
     subido_en = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
