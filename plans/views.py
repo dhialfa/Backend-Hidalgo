@@ -1,15 +1,18 @@
 import os
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, decorators, response, status, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
+
 from .models import Plan, PlanTask, PlanSubscription
 from customers.models import Customer
 from .serializers import PlanSerializer, PlanTaskSerializer, PlanSubscriptionSerializer
 
 # ---------- Auth toggle ----------
 DISABLE_AUTH = os.getenv("DISABLE_AUTH", "0") == "1"
+
 
 def _actor_or_none(request):
     u = getattr(request, "user", None)
@@ -18,7 +21,9 @@ def _actor_or_none(request):
 
 # ==================== Plans ====================
 class PlanViewSet(viewsets.ModelViewSet):
-    queryset = Plan.active_objects.all().order_by("name", "id")
+    """
+    Lista/gestiona Planes. Optimiza GET con prefetch de tasks.
+    """
     serializer_class = PlanSerializer
     permission_classes = [permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -26,6 +31,15 @@ class PlanViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "description"]
     ordering_fields = ["name", "price", "id", "created_at", "updated_at"]
     ordering = ["name"]
+
+    def get_queryset(self):
+        qs = Plan.active_objects.all().order_by("name", "id")
+        # Prefetch SOLO en GET para evitar N+1 si el serializer expone tasks
+        if self.request and self.request.method == "GET":
+            qs = qs.prefetch_related(
+                Prefetch("tasks", queryset=PlanTask.active_objects.order_by("name", "id"))
+            )
+        return qs
 
     def perform_create(self, serializer):
         actor = _actor_or_none(self.request)
@@ -52,7 +66,6 @@ class PlanViewSet(viewsets.ModelViewSet):
 
 # ==================== PlanTasks ====================
 class PlanTaskViewSet(viewsets.ModelViewSet):
-    queryset = PlanTask.active_objects.select_related("plan").all().order_by("name", "id")
     serializer_class = PlanTaskSerializer
     permission_classes = [permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -62,7 +75,7 @@ class PlanTaskViewSet(viewsets.ModelViewSet):
     ordering = ["name"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = PlanTask.active_objects.select_related("plan").order_by("name", "id")
         plan_id = self.request.query_params.get("plan")
         if plan_id:
             qs = qs.filter(plan_id=plan_id)
@@ -138,12 +151,10 @@ class PlanTaskViewSet(viewsets.ModelViewSet):
 
         if request.method.lower() == "get":
             qs = PlanTask.active_objects.filter(plan=plan).order_by("name", "id")
-
             page = self.paginate_queryset(qs)
             if page is not None:
                 ser = PlanTaskSerializer(page, many=True, context={"request": request})
                 return self.get_paginated_response(ser.data)
-
             ser = PlanTaskSerializer(qs, many=True, context={"request": request})
             return response.Response(ser.data, status=status.HTTP_200_OK)
 
@@ -166,37 +177,41 @@ class PlanTaskViewSet(viewsets.ModelViewSet):
 
 # ==================== PlanSubscriptions ====================
 class PlanSubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = (
-        PlanSubscription.active_objects
-        .select_related("plan", "customer")
-        .all()
-        .order_by("-start_date", "id")
-    )
+    """
+    GET: trae plan y customer con select_related, y prefetch de plan__tasks SOLO en GET
+         para que el serializer añada plan_detail (con tasks) y customer_info.
+    """
     serializer_class = PlanSubscriptionSerializer
     permission_classes = [permissions.AllowAny] if DISABLE_AUTH else [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["active", "customer", "plan", "status", "start_date"]
     search_fields = ["notes", "plan__name", "customer__name", "customer__identification"]
-    ordering_fields = ["start_date", "end_date", "id", "created_at", "updated_at"]
+    ordering_fields = ["start_date", "id", "created_at", "updated_at"]  # quité 'end_date' si no existe
     ordering = ["-start_date", "id"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        # Atajos útiles: ?customer=<id>&plan=<id>
+        qs = PlanSubscription.active_objects.select_related("plan", "customer").order_by("-start_date", "id")
+
+        # Filtros atajo
         customer_id = self.request.query_params.get("customer")
         plan_id = self.request.query_params.get("plan")
         if customer_id:
             qs = qs.filter(customer_id=customer_id)
         if plan_id:
             qs = qs.filter(plan_id=plan_id)
+
+        # Prefetch SOLO en GET (para plan_detail -> tasks)
+        if self.request and self.request.method == "GET":
+            qs = qs.prefetch_related(
+                Prefetch("plan__tasks", queryset=PlanTask.active_objects.order_by("name", "id"))
+            )
         return qs
 
     def _assert_plan_and_tasks_active(self, plan: Plan):
         if not plan.active:
             raise ValidationError({"plan": "No se pueden crear o modificar suscripciones con un plan inactivo."})
         if PlanTask.objects.filter(plan=plan, active=False).exists():
-           raise ValidationError({"plan": "No se pueden crear o modificar suscripciones: el plan tiene tareas inactivas."})
-
+            raise ValidationError({"plan": "No se pueden crear o modificar suscripciones: el plan tiene tareas inactivas."})
 
     def perform_create(self, serializer):
         actor = _actor_or_none(self.request)
@@ -204,15 +219,15 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
         if actor:
             save_kwargs.update(created_by=actor, updated_by=actor)
 
-        # 🚫 Validar que el plan esté activo y sin tareas inactivas
+        # Validar plan activo y sin tasks inactivas (si viene en el payload)
         plan = serializer.validated_data.get("plan")
         if plan:
             self._assert_plan_and_tasks_active(plan)
 
-        # Reglas existentes (mantener)
+        # Si se marca 'active', desactivar otras activas del mismo cliente
         status_in = serializer.validated_data.get("status")
         customer = serializer.validated_data.get("customer")
-        if status_in in ("active", "ACTIVE", "Active") and customer:
+        if status_in and status_in.lower() == "active" and customer:
             with transaction.atomic():
                 PlanSubscription.objects.filter(customer=customer, status__iexact="active").update(status="inactive")
                 serializer.save(**save_kwargs)
@@ -224,7 +239,7 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
         actor = _actor_or_none(self.request)
         instance = self.get_object()
 
-        # 🚫 Validar plan (nuevo o actual) y tareas relacionadas
+        # Validar plan (nuevo o actual) y tasks
         plan = serializer.validated_data.get("plan") or getattr(instance, "plan", None)
         if plan:
             self._assert_plan_and_tasks_active(plan)
@@ -264,9 +279,18 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
 
         if request.method.lower() == "get":
             status_q = request.query_params.get("status")
-            qs = PlanSubscription.active_objects.filter(customer=customer).select_related("plan").order_by("-start_date", "id")
+            qs = (
+                PlanSubscription.active_objects
+                .filter(customer=customer)
+                .select_related("plan", "customer")
+                .order_by("-start_date", "id")
+            )
             if status_q:
                 qs = qs.filter(status__iexact=status_q)
+
+            qs = qs.prefetch_related(
+                Prefetch("plan__tasks", queryset=PlanTask.active_objects.order_by("name", "id"))
+            )
 
             page = self.paginate_queryset(qs)
             if page is not None:
@@ -280,7 +304,6 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
         ser = PlanSubscriptionSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
 
-        # 🚫 Validar plan y sus tareas
         plan = ser.validated_data.get("plan")
         if not plan:
             raise ValidationError({"plan": "Este campo es requerido."})
@@ -293,7 +316,7 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
 
         status_in = ser.validated_data.get("status")
         with transaction.atomic():
-            if status_in in ("active", "ACTIVE", "Active"):
+            if status_in and status_in.lower() == "active":
                 PlanSubscription.objects.filter(customer=customer, status__iexact="active").update(status="inactive")
             obj = ser.save(**save_kwargs)
 
@@ -316,9 +339,18 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
 
         if request.method.lower() == "get":
             status_q = request.query_params.get("status")
-            qs = PlanSubscription.active_objects.filter(plan=plan).select_related("customer").order_by("-start_date", "id")
+            qs = (
+                PlanSubscription.active_objects
+                .filter(plan=plan)
+                .select_related("plan", "customer")
+                .order_by("-start_date", "id")
+            )
             if status_q:
                 qs = qs.filter(status__iexact=status_q)
+
+            qs = qs.prefetch_related(
+                Prefetch("plan__tasks", queryset=PlanTask.active_objects.order_by("name", "id"))
+            )
 
             page = self.paginate_queryset(qs)
             if page is not None:
@@ -328,7 +360,7 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
             ser = PlanSubscriptionSerializer(qs, many=True, context={"request": request})
             return response.Response(ser.data, status=status.HTTP_200_OK)
 
-        # 🚫 POST: crear suscripción para ESTE plan -> bloquear si plan inactivo o con tasks inactivas
+        # POST: crear suscripción para ESTE plan -> bloquear si plan inactivo o con tasks inactivas
         if not plan.active or PlanTask.objects.filter(plan=plan, active=False).exists():
             raise ValidationError({"plan": "No se pueden crear suscripciones: plan inactivo o con tareas inactivas."})
 
@@ -343,14 +375,13 @@ class PlanSubscriptionViewSet(viewsets.ModelViewSet):
         customer = ser.validated_data.get("customer")
         status_in = ser.validated_data.get("status")
         with transaction.atomic():
-            if status_in in ("active", "ACTIVE", "Active") and customer:
+            if status_in and status_in.lower() == "active" and customer:
                 PlanSubscription.objects.filter(customer=customer, status__iexact="active").update(status="inactive")
             obj = ser.save(**save_kwargs)
 
         out = PlanSubscriptionSerializer(obj, context={"request": request})
         return response.Response(out.data, status=status.HTTP_201_CREATED)
 
-    # -------- Acciones rápidas de estado (opcionales) --------
     @decorators.action(
         detail=True,
         methods=["post"],
