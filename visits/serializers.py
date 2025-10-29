@@ -37,3 +37,29 @@ class VisitSerializer(serializers.ModelSerializer):
             "assessment","evidences","tasks_completed","materials_used",
         ]
         read_only_fields = ["created_at","updated_at"]
+
+    def to_representation(self, instance):
+            data = super().to_representation(instance)
+            sub = instance.subscription
+
+            if sub:
+                c = sub.customer
+                p = sub.plan
+                data["subscription_info"] = {
+                    "id": sub.id,
+                    "status": sub.status,
+                    "start_date": str(sub.start_date),
+                    "customer": {
+                        "id": c.id,
+                        "name": getattr(c, "name", None),
+                        "email": getattr(c, "email", None),
+                        "phone": getattr(c, "phone", None),
+                    } if c else None,
+                    "plan": {
+                        "id": p.id,
+                        "name": getattr(p, "name", None),
+                        "price": str(p.price),
+                    } if p else None,
+                }
+
+            return data

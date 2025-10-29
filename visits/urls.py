@@ -1,14 +1,18 @@
 from rest_framework.routers import DefaultRouter
-from .views import (
-    VisitViewSet, AssessmentViewSet, EvidenceViewSet,
-    TaskCompletedViewSet, MaterialUsedViewSet
+from visits.views import (
+    VisitViewSet,
+    AssessmentViewSet,
+    EvidenceViewSet,
+    TaskCompletedViewSet,
+    MaterialUsedViewSet,
 )
 
 router = DefaultRouter()
-router.register(r"visits", VisitViewSet, basename="visits")
-router.register(r"assessments", AssessmentViewSet, basename="assessments")
-router.register(r"evidences", EvidenceViewSet, basename="evidences")
-router.register(r"tasks-completed", TaskCompletedViewSet, basename="tasks-completed")
-router.register(r"materials-used", MaterialUsedViewSet, basename="materials-used")
+router.register(r"visit", VisitViewSet, basename="visit")
+router.register(r"assessment", AssessmentViewSet, basename="assessment")
+router.register(r"evidence", EvidenceViewSet, basename="evidence")
+router.register(r"task-completed", TaskCompletedViewSet, basename="task-completed")
+router.register(r"material-used", MaterialUsedViewSet, basename="material-used")
 
 urlpatterns = router.urls
+
