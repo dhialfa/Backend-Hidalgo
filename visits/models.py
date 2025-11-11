@@ -38,7 +38,7 @@ class Visit(BaseModel, TimeStampedModel):
         ordering = ["-start", "id"]
 
 
-# --------- Assessment (1:1 con Visit) ---------
+# --------- Assessment (1:1 con Visit) Feedback ---------
 class Assessment(BaseModel, TimeStampedModel):
     visit = models.OneToOneField(
         Visit, on_delete=models.CASCADE, related_name="assessment"

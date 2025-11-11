@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; color: #222;">
+    <p>Hola {{ customer.name|default:"cliente" }},</p>
+
+    <p>La visita <strong>#{{ visit.id }}</strong> ha sido marcada como <strong>COMPLETADA</strong>.</p>
+
+    {% if visit.notes %}
+      <p><strong>Notas:</strong> {{ visit.notes }}</p>
+    {% endif %}
+
+    {% if tasks %}
+      <h3>Tareas completadas</h3>
+      <ul>
+        {% for t in tasks %}
+          <li>
+            <strong>{{ t.name }}</strong>
+            {% if t.hours %} ({{ t.hours }} h){% endif %}
+            {% if t.description %}<br>{{ t.description }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if materials %}
+      <h3>Materiales usados</h3>
+      <ul>
+        {% for m in materials %}
+          <li>
+            {{ m.description }}
+            {% if m.unit %} ({{ m.unit }}){% endif %}
+            - {{ m.unit_cost }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if evidences %}
+      <h3>Evidencias</h3>
+      <ul>
+        {% for e in evidences %}
+          <li>
+            {% if e.file %}
+              <a href="{{ e.file.url }}">{{ e.file.name }}</a>
+            {% else %}
+              (sin archivo)
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <p>Saludos,<br>Computadores Hidalgo</p>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+Hola {{ customer.name|default:"cliente" }},
+
+La visita #{{ visit.id }} ha sido marcada como COMPLETADA.
+
+{% if visit.notes %}
+Notas de la visita:
+{{ visit.notes }}
+{% endif %}
+
+{% if tasks %}
+Tareas completadas:
+{% for t in tasks %}
+ - {{ t.name }}{% if t.hours %} ({{ t.hours }} h){% endif %}
+{% if t.description %}  {{ t.description }}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if materials %}
+Materiales usados:
+{% for m in materials %}
+ - {{ m.description }}{% if m.unit %} ({{ m.unit }}){% endif %} - {{ m.unit_cost }}
+{% endfor %}
+{% endif %}
+
+{% if evidences %}
+Evidencias subidas:
+{% for e in evidences %}
+ - {{ e.file.url }}
+{% endfor %}
+{% endif %}
+
+Saludos,
+Computadores Hidalgo
