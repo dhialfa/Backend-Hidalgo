@@ -1,32 +1,46 @@
-# users/serializers.py
 from rest_framework import serializers
-from .models import User
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import update_last_login
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.settings import api_settings
 
 User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "id", "username", "first_name", "last_name",
-            "email", "phone",
-            "is_active", "active",
-            "created_at", "updated_at",
-            "created_by", "updated_by",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "is_staff",
+            "is_active",
+            "is_superuser",
+            "last_login",
+            "date_joined",
+            "phone",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "created_by", "updated_by"]
+        read_only_fields = ["id", "is_superuser", "last_login", "date_joined"]
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = [
-            "username", "password", "first_name", "last_name",
-            "email", "phone",
-            "is_active", "active",
+            "username",
+            "password",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "is_staff",
+            "is_active",
         ]
 
     def create(self, validated_data):
@@ -36,38 +50,74 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = User.EMAIL_FIELD  # <-- le decimos que el campo sea 'email'
+    """
+    Login usando email + password.
+    No dependemos de USERNAME_FIELD.
+    """
+
+    # Campo que esperamos en el body del login
+    username_field = "email"
 
     def validate(self, attrs):
-        # obtenemos el email en lugar del username
-        credentials = {
-            'email': attrs.get('email'),
-            'password': attrs.get('password')
-        }
+        email = attrs.get("email")
+        password = attrs.get("password")
 
-        # verificamos que no estén vacíos
-        if not credentials['email'] or not credentials['password']:
-            raise serializers.ValidationError("Debe incluir 'email' y 'password'.")
+        if not email or not password:
+            raise serializers.ValidationError(
+                "Debe incluir 'email' y 'password'."
+            )
 
-        # autenticamos con el backend de Django
-        from django.contrib.auth import authenticate
-        user = authenticate(**credentials)
+        # 1) Buscar usuario por email
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise AuthenticationFailed(
+                self.error_messages["no_active_account"],
+                "no_active_account",
+            )
 
-        if user is None or not user.is_active:
-            raise serializers.ValidationError("Credenciales inválidas.")
+        # 2) Verificar que esté activo
+        if not user.is_active:
+            raise AuthenticationFailed(
+                self.error_messages["no_active_account"],
+                "no_active_account",
+            )
 
+        # 3) Verificar contraseña
+        if not user.check_password(password):
+            raise AuthenticationFailed(
+                self.error_messages["no_active_account"],
+                "no_active_account",
+            )
+
+        # 4) Generar tokens
         refresh = self.get_token(user)
-
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+        data = {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
         }
 
-    # redefinimos los campos esperados
+        # 5) Agregar el usuario
+        data["user"] = UserSerializer(user).data
+
+        # 6) Actualizar last_login
+        if api_settings.UPDATE_LAST_LOGIN:
+            update_last_login(None, user)
+
+        # Necesario para SimpleJWT
+        self.user = user
+
+        return data
+
     @classmethod
     def get_token(cls, user):
+        """
+        Opcional: agregar más datos al JWT.
+        """
         token = super().get_token(user)
-        token['email'] = user.email
-        token['username'] = user.username
+        token["email"] = user.email
+        token["username"] = user.username
+        token["is_staff"] = user.is_staff
         return token
