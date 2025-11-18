@@ -20,6 +20,3 @@ __pycache__/
 
 # Ignorar carpeta de evidencias
 evidencePhotos/
-
-# Media subida por Django (no versionar)
-media/
