@@ -151,7 +151,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
+    "PAGE_SIZE": 10,
 
 }
 
@@ -185,4 +185,20 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False, 
     "BLACKLIST_AFTER_ROTATION": False, 
     "AUTH_HEADER_TYPES": ("Bearer",), 
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.core.mail": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
 }

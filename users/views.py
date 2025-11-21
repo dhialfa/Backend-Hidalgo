@@ -1,34 +1,9 @@
 # users/views.py
 import os
 from rest_framework import viewsets, permissions, decorators, response, status
-<<<<<<< HEAD
-=======
-# users/views.py
-import os
-
-from rest_framework import viewsets, permissions, decorators, response, status
-from django.db.models import Q
-from rest_framework_simplejwt.views import TokenObtainPairView
-
-from .models import User
-from .serializers import (
-    UserSerializer,
-    UserCreateSerializer,
-    EmailTokenObtainPairSerializer,
-)
-
-class IsAdmin(permissions.IsAdminUser):
-    pass
-
-DISABLE_AUTH = os.getenv("DISABLE_AUTH", "0") == "1"
-
-def _actor_or_none(request):
-    u = getattr(request, "user", None)
-    return u if u and getattr(u, "is_authenticated", False) else None
-
->>>>>>> master
 from .models import User
 from .serializers import UserSerializer, UserCreateSerializer, EmailTokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 class IsAdmin(permissions.IsAdminUser):
     pass

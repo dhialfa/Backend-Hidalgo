@@ -14,7 +14,6 @@ def _actor_or_none(request):
     u = getattr(request, "user", None)
     return u if (u and getattr(u, "is_authenticated", False)) else None
 
-# -------- Customers --------
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.active_objects.all().order_by("name", "id")
     serializer_class = CustomerSerializer
@@ -31,7 +30,18 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         actor = _actor_or_none(self.request)
-        serializer.save(updated_by=actor)
+
+        # Estado ANTES del save (serializer.instance es la instancia original)
+        old_customer: Customer = serializer.instance
+        was_active = getattr(old_customer, "active", None)
+
+        # Guardamos cambios
+        customer: Customer = serializer.save(updated_by=actor)
+        is_active_now = getattr(customer, "active", None)
+
+        # Si pasó de active=True -> active=False, corremos cascada
+        if was_active and not is_active_now:
+            customer.soft_delete_cascade()
 
     def perform_destroy(self, instance):
         instance.delete()
@@ -46,7 +56,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         obj.active = True
         obj.save(update_fields=["active"])
         return response.Response({"detail": "Customer restored"}, status=status.HTTP_200_OK)
-
+    
 # -------- CustomerContacts (no anidado) --------
 class CustomerContactViewSet(viewsets.ModelViewSet):
     queryset = CustomerContact.active_objects.all().order_by("name", "id")
