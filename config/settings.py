@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'core',
     "plans",
     "visits",
-    
+    "analytics",
 ]
 
 

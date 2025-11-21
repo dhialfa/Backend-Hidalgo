@@ -7,6 +7,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from users.views import EmailTokenObtainPairView
 from django.conf import settings
 from django.conf.urls.static import static
+from analytics.views import DashboardOverviewView
+
 
 schema_view = get_schema_view(
     openapi.Info(title="Backend Hidalgo API", default_version="v1"),
@@ -23,6 +25,7 @@ urlpatterns = [
     path("api/", include("customers.urls")),
     path("api/", include("plans.urls")),
     path("api/", include("visits.urls")),
+    path("api/dashboard/overview/", DashboardOverviewView.as_view(), name="dashboard-overview"),
 
     # JWT    path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
